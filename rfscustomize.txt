@@ -1,0 +1,98 @@
+Revision : 200112 by Hungrok Kwon
+
+###########################################################
+# QEMU-chroot for arm (V7 ARM core)
+###########################################################
+# Step1. Install for qemu chroot 
+apt install qemu-user-static 
+apt install qemu binfmt-support
+apt install arch-install-scripts
+
+# Step2. Mount Raw block file for dd after customize – OPTIONAL
+# dd of=rootfs.img bs= seek= count=0   
+truncate rootfs.img –s 20G   # create 20G raw block image , use this instead of dd 
+mkfs.ext4 -F rootfs.img
+mkdir 1804rfs                      # Assume ubuntu 1804 root file system 
+mount rootfs.img 1804rfs      # should be mount first before tar , if not-can’t chroot as no directory
+tar xvf tar.gz 1804rfs 
+
+# Step 3. Change Root 
+tar xvf tar.gz 1804rfs 
+cp /usr/bin/qemu-arm-static 1804rfs/usr/bin     # Should be aarch64 for V8 ARM core 
+systemctl start systemd-binfmt.service 
+arch-chroot 1804rfs   # chroot + Mount by scripts , if want to have manual, please see that script file 
+
+# Step4. Verify 
+uname –a     # to see rfs version and architecture 
+apt update    # to see network is okay 
+
+
+###########################################################
+# Install Python      
+###########################################################
+apt install python3-pip   # python 3.6 and other 12 package are also installed  
+apt install python-pip     # python 2.7   "     "       "
+
+
+###########################################################
+# opencv-python build for latest version and with python3.x   
+# Latest version : 4.2.0 since 2019-11                  
+# Remark : ubuntu apt install python-opencv result to reside in python 2.7          
+###########################################################
+# Prerequisite package  
+apt install cmake
+apt install gcc g++
+apt install ((python3-dev)) python3-numpy     # we can see numpy using pip3 list
+apt install libavcodec-dev libavformat-dev libswscale-dev
+apt install libgstreamer-plugins-base1.0-dev libgstreamer1.0-dev
+
+# download and build 
+sudo apt-get install git
+git clone https://github.com/opencv/opencv.git
+cd opencv
+mkdir build
+cd build
+cmake ../
+make
+sudo make install                  # Remark , can’t see package in pip3 list 
+
+# Verify 
+import cv2 as cv
+print(cv.__version__)                                 
+
+###########################################################
+# pytorch build for latest version and with python3.x   
+# Latest version : 1.3 around 2019.12                
+# Remark : fail impopt torch with python2.7          
+###########################################################
+
+# install prerequisite packages
+apt install libopenblas-dev libblas-dev m4 cmake cython3 git  # cython3 not cython 
+git clone --recursive https://github.com/pytorch/pytorch       # pytorch
+git clone --recursive https://github.com/pytorch/vision          # pytorchvision 
+cd pytorch                                                                     # next will be vision 
+
+# Setup env. Varaibles 
+export USE_CUDA=0
+export USE_DISTRIBUTED=0
+export USE_MKLDNN=0
+export USE_NNPACK=0
+export USE_QNNPACK=0
+
+# Build & Install on Python 3.6
+pip3 install pyyaml
+Pip3 install typing
+python3 setup.py build
+python3 setup.py install    
+
+# Verify 
+pip list 
+import torch as to           
+print (to.version)
+import torchvision as tov
+
+
+        
+   
+
+
